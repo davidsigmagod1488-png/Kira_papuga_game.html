@@ -1,0 +1,165 @@
+import sys
+import time
+
+# Стан гри
+player_energy = 80
+inventory = []
+cage_storage = ["скріпка"]
+has_water = True
+has_nuts = True
+
+def print_status():
+    """Виводить поточний стан гравця"""
+    print("\n" + "="*40)
+    print(f"🦜 Папуга Кіра | Енергія: {player_energy}%")
+    print(f"🎒 У дзьобі: {', '.join(inventory) if inventory else 'порожньо'}")
+    print(f"🛏️ Схованка в клітці: {', '.join(cage_storage) if cage_storage else 'порожньо'}")
+    print("="*40)
+
+def game_over(reason):
+    """Кінець гри з поясненням причини"""
+    print("\n❌ ГРА ЗАКІНЧЕНА!")
+    print(reason)
+    sys.exit()
+
+def win_game():
+    """Перемога у грі"""
+    print("\n🎉 ПЕРЕМОГА!!!")
+    print("Кіра відімкнула кватирку скріпкою та гілочкою і вилетіла на волю!")
+    print("Давід і Соломія лише здивовано дивляться у вікно. Ти вільна пташка!")
+    sys.exit()
+
+def start_cage():
+    """Локація: Клітка"""
+    global player_energy, has_water, has_nuts
+    
+    print_status()
+    print("\nТи у своїй клітці. Дверцята привідкриті. Соломія сидить на дивані.")
+    print("1. Поїсти горіхів та попити води (Відновити енергію)")
+    print("2. Забрати скріпку зі схованки у дзьоб")
+    print("3. Тихо вилетіти на високу шафу")
+    print("4. Голосно крикнути 'Кіра хороша!'")
+
+    choice = input("\nОбери дію (1-4): ")
+
+    if choice == "1":
+        if has_water or has_nuts:
+            player_energy = 100
+            has_water = False
+            has_nuts = False
+            print("\n✨ Ти смачно поїла насіння з горіхами та попила води. Енергія 100%!")
+        else:
+            print("\nЗапаси скінчилися, годівничка порожня.")
+        start_cage()
+
+    elif choice == "2":
+        if "скріпка" in cage_storage:
+            cage_storage.remove("скріпка")
+            inventory.append("скріпка")
+            print("\n🔧 Ти взяла скріпку у дзьоб. Тепер це твій інструмент!")
+        else:
+            print("\nУ схованці вже нічого немає.")
+        start_cage()
+
+    elif choice == "3":
+        if player_energy < 50:
+            print("\nТи занадто слабка для польоту! Поїж спочатку.")
+            start_cage()
+        else:
+            print("\nФрррр! Ти тихо перелетіла на шафу. Соломія нічого не помітила.")
+            location_wardrobe()
+
+    elif choice == "4":
+        print("\n🔊 Ти голосно крикнула на всю кімнату!")
+        print("З коридору миттєво прибіг надшвидкий Давід і закрив клітку!")
+        game_over("Давід спіймав тебе через твій галас.")
+    else:
+        print("\nНевідома команда. Спробуй ще раз.")
+        start_cage()
+
+def location_wardrobe():
+    """Локація: Шафа"""
+    global player_energy
+    print_status()
+    print("\nТи на високій шафі. Тут безпечно, Соломія не дістане.")
+    print("На шафі лежить тонка дерев'яна гілочка від домашньої рослини.")
+    print("1. Взяти гілочку у дзьоб")
+    print("2. Змайструвати (скрафтити) відмичку (потрібні скріпка + гілочка)")
+    print("3. Полетіти до вікна, щоб вирватися на волю")
+    print("4. Полетіти на підлогу")
+
+    choice = input("\nОбери дію (1-4): ")
+
+    if choice == "1":
+        if "гілочка" not in inventory and "гілочка" not in cage_storage:
+            inventory.append("гілочка")
+            print("\n🌿 Ти підібрала тонку гілочку.")
+        else:
+            print("\nТут більше немає гілочок.")
+        location_wardrobe()
+
+    elif choice == "2":
+        if "скріпка" in inventory and "гілочка" in inventory:
+            inventory.remove("скріпка")
+            inventory.remove("гілочка")
+            inventory.append("відмичка")
+            print("\n🔨 Ура! Ти скрафтила ВІДМИЧКУ ДЛЯ ВІКНА!")
+        else:
+            print("\n❌ Не вистачає деталей для крафту! Потрібні скріпка та гілочка у дзьобі.")
+        location_wardrobe()
+
+    elif choice == "3":
+        print("\nТи летиш до вікна...")
+        location_window()
+
+    elif choice == "4":
+        print("\nТи спустилася на підлогу. Соломія помітила тебе!")
+        print("Вона повільна, але впевнено йде на тебе з покривалом...")
+        location_floor()
+    else:
+        print("\nНевідома команда.")
+        location_wardrobe()
+
+def location_floor():
+    """Локація: Підлога"""
+    print_status()
+    print("1. Швидко злетіти назад на шафу (Потрібно 30% енергії)")
+    print("2. Побігти під диван")
+    
+    choice = input("\nОбери дію (1-2): ")
+    if choice == "1":
+        print("\nТи встигла злетіти прямо з-під рук Соломії!")
+        location_wardrobe()
+    elif choice == "2":
+        print("\nТи сховалася під диваном. Але тут з'явився супершвидкий Давід!")
+        game_over("Давід засунув руку під диван і миттєво схопив тебе.")
+    else:
+        location_floor()
+
+def location_window():
+    """Локація: Вікно"""
+    print_status()
+    print("\nВікно зачинене на клямку. Шлях на волю заблоковано.")
+    print("Ззаду до тебе біжить Давід, а Соломія блокує відхід рушником!")
+    print("1. Спробувати відкрити вікно відмичкою")
+    print("2. Пробувати розбити скло дзьобом")
+
+    choice = input("\nОбери дію (1-2): ")
+    if choice == "1":
+        if "відмичка" in inventory:
+            win_game()
+        else:
+            print("\nУ тебе немає відмички! Твій дзьоб застряг у засувці.")
+            game_over("Давід підбіг і схопив тебе, поки ти смикала замок.")
+    elif choice == "2":
+        game_over("Скло занадто міцне. Кіра набила гулю, і Соломія накрила її покривалом.")
+
+# Початок гри
+print("==============================================")
+print("  ПРИГОДИ ПАПУГИ КІРИ: ВТЕЧА НА ВОЛЮ          ")
+print("==============================================")
+print("Допоможи Кірі перехитрити швидкого Давіда та  ")
+print("повільну Соломію за допомогою крафтингу!     ")
+time.sleep(1)
+
+start_cage()
