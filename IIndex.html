@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Втеча папуги Кіри 🦜</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --danger: #ef5350;
+            --bg-dark: #121214;
+            --panel-bg: #1e1e24;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: linear-gradient(135deg, #0f0c20 0%, #15102a 50%, #06040a 100%);
+            color: #fff; 
+            text-align: center; 
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px; /* Створює 3D-простір для сторінки */
+        }
+
+        #game-container { 
+            max-width: 550px; 
+            width: 100%;
+            background: var(--panel-bg); 
+            padding: 30px; 
+            border-radius: 24px; 
+            /* Складні тіні для ефекту 3D-об'єму та левітації над екраном */
+            box-shadow: 
+                0px 20px 40px rgba(0,0,0,0.7),
+                inset 0px 1px 3px rgba(255,255,255,0.15),
+                0px 0px 30px rgba(76, 175, 80, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transform: rotateX(5deg) rotateY(-3deg); /* Легкий 3D поворот головного екрана */
+            transition: transform 0.5s ease;
+        }
+
+        #game-container:hover {
+            transform: rotateX(0deg) rotateY(0deg); /* Повертається рівно при наведенні */
+        }
+
+        .avatar-container {
+            margin-bottom: -10px;
+            transform: translateZ(50px); /* Виштовхує картинку вперед у 3D */
+        }
+
+        .avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 4px solid var(--primary);
+            object-fit: cover;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            font-size: 26px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            margin-top: 15px;
+            letter-spacing: 1px;
+        }
+
+        .stats { 
+            display: flex; 
+            justify-content: space-around; 
+            background: #252530; 
+            padding: 12px; 
+            border-radius: 16px; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.4);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #log { 
+            min-height: 100px; 
+            margin-bottom: 20px; 
+            font-size: 16px; 
+            line-height: 1.5; 
+            white-space: pre-line; 
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            text-align: left;
+        }
+
+        /* Об'ємні 3D кнопки */
+        .btn { 
+            position: relative;
+            display: block; 
+            width: 100%; 
+            padding: 16px; 
+            margin: 14px 0; 
+            background: linear-gradient(180deg, #5cbd62 0%, #4CAF50 100%);
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.3);
+            /* Ефект 3D-ребра кнопки */
+            border-bottom: 4px solid #388E3C;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            transition: all 0.1s ease;
+        }
+
+        .btn:hover { 
+            background: linear-gradient(180deg, #66ca6c 0%, #45a049 100%);
+            transform: translateY(1px);
+            border-bottom-width: 3px;
+        }
+
+        .btn:active {
+            transform: translateY(4px); /* Кнопка фізично вдавлюється при кліку */
+            border-bottom-width: 0px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        /* Об'ємна червона кнопка для небезпеки */
+        .btn-danger { 
+            background: linear-gradient(180deg, #ef5350 0%, #e53935 100%);
+            border-bottom-color: #b71c1c;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(180deg, #f44336 0%, #d32f2f 100%);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="avatar-container">
+        <img class="avatar" src="https://unsplash.com" alt="Папуга Кіра">
+    </div>
+    
+    <h2>🦜 Втеча папуги Кіри</h2>
+    
+    <div class="stats">
+        <div>🔋 Енергія: <span id="energy">80</span>%</div>
+        <div>🎒 У дзьобі: <span id="inventory">порожньо</span></div>
+    </div>
+
+    <div id="log">Завантаження гри...</div>
+    <div id="choices"></div>
+</div>
+
+<script>
+let energy = 80;
+let inventory = [];
+let cageStorage = ["скріпка"];
+let hasFood = true;
+
+const soundEat = new Audio('eat.mp3');
+const soundFly = new Audio('fly.mp3');
+const soundWin = new Audio('win.mp3');
+
+const logDiv = document.getElementById("log");
+const choicesDiv = document.getElementById("choices");
+const energySpan = document.getElementById("energy");
+const inventorySpan = document.getElementById("inventory");
+
+function updateStats() {
+    energySpan.innerText = energy;
+    inventorySpan.innerText = inventory.length > 0 ? inventory.join(", ") : "порожньо";
+}
+
+function print(text) {
+    logDiv.innerText = text;
+}
+
+function setChoices(options) {
+    choicesDiv.innerHTML = "";
+    options.forEach(opt => {
+        let btn = document.createElement("button");
+        btn.className = opt.danger ? "btn btn-danger" : "btn";
+        btn.innerText = opt.text;
+        btn.onclick = opt.action;
+        choicesDiv.appendChild(btn);
+    });
+}
+
+function startCage() {
+    updateStats();
+    print("🏠 [ЛОКАЦІЯ: КЛІТКА]\n\nДверцята привідкриті! Соломія розслабилася на дивані. З коридору чути кроки надшвидкого Давіда...\nЩо робимо?");
+    
+    let choices = [];
+    if (hasFood) {
+        choices.push({ text: "🥛 Поїсти горіхів з насінням та попити", action: () => {
+            soundEat.play().catch(() => {});
+            energy = 100;
+            hasFood = false;
+            print("✨ Смакота! Ти підкріпилася горішками. Енергія 100%!");
+            setTimeout(startCage, 2000);
+        }});
+    }
+    if (cageStorage.includes("скріпка")) {
+        choices.push({ text: "🔑 Забрати скріпку зі схованки", action: () => {
+            cageStorage = [];
+            inventory.push("скріпка");
+            print("🔧 Ти дістала скріпку у дзьоб. Тепер ти готова до крафту!");
+            setTimeout(startCage, 2000);
+        }});
+    }
+    choices.push({ text: "🛸 Тихо вилетіти на високу шафу", action: () => {
+        if (energy < 50) {
+            print("❌ Сил замало! З'їж спочатку насіння.");
+            setTimeout(startCage, 2000);
+        } else {
+            soundFly.play().catch(() => {});
+            locationWardrobe();
+        }
+    }});
+    choices.push({ text: "🔊 Закричати на всю хату 'Кіра хороша!'", danger: true, action: () => {
+        print("❌ О ні! Давід миттєво прибіг на крик і зачинив клітку. Тебе спіймали!");
+        setChoices([{ text: "🔄 Спробувати знову", action: resetGame }]);
+    }});
+    setChoices(choices);
+}
+
+function locationWardrobe() {
+    updateStats();
+    print("📦 [ЛОКАЦІЯ: ВИСОКА ШАФА]\n\nТут безпечно, Соломія не дістане. На шафі лежить тонка дерев'яна гілочка.");
+    
+    let choices = [];
+    if (!inventory.includes("гілочка") && !inventory.includes("відмичка")) {
+        choices.push({ text: "🌿 Взяти гілочку у дзьоб", action: () => {
+            inventory.push("гілочка");
+            locationWardrobe();
+        }});
+    }
+    if (inventory.includes("скріпка") && inventory.includes("гілочка")) {
+        choices.push({ text: "🔨 Скрафтити відмичку для вікна", action: () => {
+            inventory = ["відмичка"];
+            print("🔨 Ура! Ти з'єднала скріпку і гілочку. Відмичка готова!");
+            setTimeout(locationWardrobe, 2000);
+        }});
+    }
+    choices.push({ text: "🪟 Полетіти до вікна", action: () => {
+        soundFly.play().catch(() => {});
+        locationWindow();
+    }});
+    choices.push({ text: "👇 Спуститися на підлогу", action: locationFloor });
+    setChoices(choices);
+}
+
+function locationFloor() {
+    print("📉 [ЛОКАЦІЯ: ПІДЛОГА]\n\nТи на килимі. Повільна Соломія помітила тебе і розгортає покривало!");
+    setChoices([
+        { text: "🚀 Злетіти назад на шафу", action: () => {
+            soundFly.play().catch(() => {});
+            locationWardrobe();
+        }},
+        { text: "🛋️ Забігти під диван", danger: true, action: () => {
+            print("❌ Пастка! Під диваном сидів Давід. Його швидка рука схопила тебе!");
+            setChoices([{ text: "🔄 Почати спочатку", action: resetGame }]);
+        }}
+    ]);
+}
+
+function locationWindow() {
+    print("🪟 [ЛОКАЦІЯ: ВІКНО]\n\nШлях заблоковано клямкою! Позаду летить Давід, а Соломія перекриває кімнату!");
+    setChoices([
+        { text: "🔐 Відімкнути вікно відмичкою", action: () => {
+            if (inventory.includes("відмичка")) {
+                soundWin.play().catch(() => {});
+                print("🎉 ПЕРЕМОГА!!! Ти відчинила кватирку і вилетіла на волю! Свобода! 🕊️✨");
+                choicesDiv.innerHTML = "";
+            } else {
+                print("❌ Немає відмички! Поки ти колупала замок, Давід схопив тебе за хвіст.");
+                setChoices([{ text: "🔄 Почати спочатку", action: resetGame }]);
+            }
+        }},
+        { text: "💥 Протаранити скло головою", danger: true, action: () => {
+            print("❌ Скло занадто міцне. Кіра набила ґулю, і Соломія накрила її рушником.");
+            setChoices([{ text: "🔄 Почати спочатку", action: resetGame }]);
+        }}
+    ]);
+}
+
+function resetGame() {
+    energy = 80;
+    inventory = [];
